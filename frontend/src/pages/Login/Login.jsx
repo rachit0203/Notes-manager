@@ -1,103 +1,110 @@
-import React, { useState } from "react"
-import PasswordInput from "../../components/Input/PasswordInput"
-import { Link, useNavigate } from "react-router-dom"
-import { validateEmail } from "../../utils/helper"
-import { useDispatch } from "react-redux"
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import axios from "axios";
+import { toast } from "react-toastify";
 import {
   signInFailure,
   signInStart,
   signInSuccess,
-} from "../../redux/user/userSlice"
-import axios from "axios"
-import { toast } from "react-toastify"
+} from "../../redux/user/userSlice";
+import PasswordInput from "../../components/Input/PasswordInput";
+import { validateEmail } from "../../utils/helper";
 
 const Login = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
+    // Validation
     if (!validateEmail(email)) {
-      setError("Please enter a valid email address")
-      return
+      setError("Please enter a valid email address");
+      return;
     }
-
     if (!password) {
-      setError("Please enter the password")
-      return
+      setError("Please enter your password");
+      return;
     }
 
-    setError("")
-
-    // Login API
+    setError(""); // clear old errors
+    dispatch(signInStart());
 
     try {
-      dispatch(signInStart())
-
       const res = await axios.post(
         "http://localhost:3000/api/auth/signin",
         { email, password },
         { withCredentials: true }
-      )
+      );
 
       if (res.data.success === false) {
-        toast.error(res.data.message)
-        console.log(res.data)
-        dispatch(signInFailure(data.message))
+        toast.error(res.data.message);
+        dispatch(signInFailure(res.data.message));
+        return;
       }
 
-      toast.success(res.data.message)
-      dispatch(signInSuccess(res.data))
-      navigate("/")
-    } catch (error) {
-      toast.error(error.message)
-      dispatch(signInFailure(error.message))
+      toast.success(res.data.message);
+      dispatch(signInSuccess(res.data.user)); // store only user object
+      navigate("/");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+      dispatch(signInFailure(err.response?.data?.message || err.message));
     }
-  }
+  };
 
   return (
-    <div className="flex items-center justify-center mt-28">
-      <div className="w-96 border rounded bg-white px-7 py-10">
-        <form onSubmit={handleLogin}>
-          <h4 className="text-2xl mb-7">Login</h4>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-8 bg-white shadow-lg rounded-2xl">
+        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
+          Login
+        </h2>
 
+        <form onSubmit={handleLogin} className="space-y-4">
+          {/* Email */}
           <input
-            type="text"
+            type="email"
             placeholder="Email"
-            className="input-box"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 outline-none"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
 
+          {/* Password */}
           <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {error && <p className="text-red-500 text-sm pb-1">{error}</p>}
+          {/* Validation Error */}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <button type="submit" className="btn-primary">
+          {/* Login Button */}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+          >
             LOGIN
           </button>
-
-          <p className="text-sm text-center mt-4">
-            Not registered yet?{" "}
-            <Link
-              to={"/signup"}
-              className="font-medium text-[#2B85FF] underline"
-            >
-              Create an account
-            </Link>
-          </p>
         </form>
+
+        {/* Signup link */}
+        <p className="text-sm text-center mt-4 text-gray-600">
+          Not registered yet?{" "}
+          <Link
+            to="/signup"
+            className="font-medium text-blue-600 hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
